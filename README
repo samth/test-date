@@ -1,6 +1,15 @@
-The lib is for linux x86-64.
+Support Mac and Linux, x86 and x86-64.
 
-$ racket run-dates.rkt -d 1
+Uses the libwarp dynamic library from the ATT Open Tools at
+http://www2.research.att.com/sw/download/ .  The dynamic library has
+not been modified.
+
 # runs today
-$ racket run-dates.rkt -d 5
+$ racket run-dates.rkt -d 1
+
 # runs today and the previous 4 days.
+$ racket run-dates.rkt -d 5
+
+# like -d 5
+$ racket run-dates.rkt
+
