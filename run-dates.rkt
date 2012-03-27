@@ -4,7 +4,7 @@
 
 (define num-dates 5)
 
-(define lib-path "/home/samth/sw/ast-open/arch/linux.i386-64/lib/libwarp.so.1.0")
+(define lib-path "libwarp.so.1.0")
 
 (command-line
  #:once-each
