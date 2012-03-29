@@ -51,10 +51,13 @@
 
 (for ([i (in-range num-dates)])
   (define secs (+ start-secs (* 86400 i)))
-  (printf "running ~a\n" (date->string (seconds->date secs)))
   (system 
-   (string-append (format "WARP=~a LD_PRELOAD=~a" i lib-path)
+   (string-append (format "WARP=~a LD_PRELOAD=~a" 
+                          (- secs now)
+                          lib-path)
                   " "
                   racket
-                  " -l racket/base -l tests/drracket/private/easter-egg-lib"
+                  " -l racket/base -l tests/drracket/private/easter-egg-lib -l racket/date"
+                  " -e \"(display (date->string (seconds->date (current-seconds))))\""
+                  " -e \"(newline)\""
                   " -e \"(start-up-and-check-car)\"")))
