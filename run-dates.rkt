@@ -4,7 +4,13 @@
          racket/date
          racket/system)
 
+(define now (current-seconds))
+(define now-date (seconds->date now))
+
 (define num-dates 5)
+(define start-month (date-month now-date))
+(define start-day (date-day now-date))
+(define start-year #f)
 
 (define 64bit? (fixnum? (expt 2 40)))
 
@@ -22,7 +28,10 @@
 
 (command-line
  #:once-each
- ["-d" d "number of days (defaults to 5)" (set! num-dates (string->number d))])
+ ["-n" n "number of days (defaults to 5)" (set! num-dates (string->number n))]
+ [("-m" "--month") m "start in month m (defaults to current month)" (set! start-month (string->number m))]
+ [("-d" "--day") d "start on day d of month (defaults to current day)" (set! start-day (string->number d))]
+ [("-y" "--year") y "start in the year y (defaults to this or next year (depending on the date & month))" (set! start-year (string->number y))])
 
 (define racket
   (let ([p (find-system-path 'exec-file)])
@@ -30,9 +39,19 @@
         (path->string p)
         "racket")))
 
-(define now (current-seconds))
+(define start-secs 
+  (cond
+    [start-year
+     (find-seconds 1 0 0 start-day start-month start-year)]
+    [else
+     (define current-year-secs (find-seconds 1 0 0 start-day start-month (date-year now-date)))
+     (if (< current-year-secs now)
+         (find-seconds 1 0 0 start-day start-month (+ (date-year now-date) 1))
+         current-year-secs)]))
+
 (for ([i (in-range num-dates)])
-  (define secs (+ now (* 86400 i)))
+  (define secs (+ start-secs (* 86400 i)))
+  (printf "running ~a\n" (date->string (seconds->date secs)))
   (system 
    (string-append (format "WARP=~a LD_PRELOAD=~a" i lib-path)
                   " "
