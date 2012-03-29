@@ -1,30 +1,41 @@
-#lang racket
+#lang racket/base
 
-(require racket/cmdline)
+(require racket/cmdline
+         racket/date
+         racket/system)
 
 (define num-dates 5)
+
+(define 64bit? (fixnum? (expt 2 40)))
 
 (define lib-path 
   (case (system-type)
     [(unix)
-     (if (fixnum? (expt 2 40))
+     (if 64bit?
          "linux-amd64/libwarp.so.1.0"
          "linux-i386/libwarp.so.1.0")]
     [(macosx)
-     (if (fixnum? (expt 2 40))
+     (if 64bit?
          "mac-amd64/libwarp.dylib.1.0"
          "mac-i386/libwarp.dylib.1.0")]
     [else (error 'run-date "warp is not supported on windows")]))
 
 (command-line
  #:once-each
- ["-d" d "number" (set! num-dates (string->number d))])
+ ["-d" d "number of days (defaults to 5)" (set! num-dates (string->number d))])
 
-(define l 
-  (for/list ([i (in-range num-dates)])
-    (format "~a" (* -1 86400 i))))
+(define racket
+  (let ([p (find-system-path 'exec-file)])
+    (if (absolute-path? p)
+        (path->string p)
+        "racket")))
 
-(for ([i l])
+(define now (current-seconds))
+(for ([i (in-range num-dates)])
+  (define secs (+ now (* 86400 i)))
   (system 
-   (format "WARP=~a LD_PRELOAD=~a racket -l meta/build/test-drracket" 
-           i lib-path)))
+   (string-append (format "WARP=~a LD_PRELOAD=~a" i lib-path)
+                  " "
+                  racket
+                  " -l racket/base -l tests/drracket/private/easter-egg-lib"
+                  " -e \"(start-up-and-check-car)\"")))
