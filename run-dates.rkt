@@ -45,19 +45,40 @@
      (find-seconds 1 0 0 start-day start-month start-year)]
     [else
      (define current-year-secs (find-seconds 1 0 0 start-day start-month (date-year now-date)))
-     (if (< current-year-secs now)
+     (define starting-today-secs (find-seconds 1 0 0 (date-day now-date) (date-month now-date) (date-year now-date)))
+     (if (< current-year-secs starting-today-secs)
          (find-seconds 1 0 0 start-day start-month (+ (date-year now-date) 1))
          current-year-secs)]))
 
 (for ([i (in-range num-dates)])
   (define secs (+ start-secs (* 86400 i)))
-  (system 
-   (string-append (format "WARP=~a LD_PRELOAD=~a" 
-                          (- secs now)
-                          lib-path)
-                  " "
-                  racket
-                  " -l racket/base -l tests/drracket/private/easter-egg-lib -l racket/date"
-                  " -e \"(display (date->string (seconds->date (current-seconds))))\""
-                  " -e \"(newline)\""
-                  " -e \"(start-up-and-check-car)\"")))
+  (define-values (in out) (make-pipe))
+  (define s (make-semaphore))
+  (thread
+   (λ ()
+     (define proc-list
+       (process/ports
+        out
+        (current-input-port)
+        (current-error-port)
+        (string-append (format "WARP=~a LD_PRELOAD=~a" 
+                               (- secs now)
+                               lib-path)
+                       " "
+                       racket
+                       " -l racket/base -l tests/drracket/private/easter-egg-lib -l racket/date"
+                       " -e \"(display (current-seconds))\""
+                       " -e \"(newline)\""
+                       " -e \"(start-up-and-check-car)\"")))
+     (define proc (list-ref proc-list 4))
+     (proc 'wait)
+     (close-output-port out)
+     (semaphore-post s)))
+  (define drr-secs (read in))
+  (close-input-port in)
+  (unless (< (abs (- drr-secs secs)) 3600)
+    (error 'run-dates.rkt "time didn't change (enough); wanted drr to be ~a, but it thinks it is ~a, delta=~a"
+           secs
+           drr-secs
+           (abs (- drr-secs secs))))
+  (semaphore-wait s))
