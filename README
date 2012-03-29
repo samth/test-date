@@ -5,11 +5,8 @@ http://www2.research.att.com/sw/download/ .  The dynamic library has
 not been modified.
 
 # runs today
-$ racket run-dates.rkt -d 1
+$ racket run-dates.rkt -n 1
 
-# runs today and the previous 4 days.
-$ racket run-dates.rkt -d 5
-
-# like -d 5
-$ racket run-dates.rkt
+# runs today and the next 4 days.
+$ racket run-dates.rkt -n 5
 
